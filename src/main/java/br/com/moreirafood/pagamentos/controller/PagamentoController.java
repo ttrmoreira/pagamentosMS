@@ -2,8 +2,10 @@ package br.com.moreirafood.pagamentos.controller;
 
 import br.com.moreirafood.pagamentos.domain.pagamento.DadosPagamento;
 import br.com.moreirafood.pagamentos.service.PagamentoService;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +51,16 @@ public class PagamentoController {
     public ResponseEntity<DadosPagamento> remover (@PathVariable @NotNull Long id){
         service.excluirPagamento(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/confirmar")
+    @CircuitBreaker(name = "atualizaPedido", fallbackMethod = "pagamentoAutorizadoComIntegracaoPendente")
+    public void confirmarPagamento(@PathVariable @NotNull Long id){
+        service.confirmarPagamento(id);
+    }
+
+    public void pagamentoAutorizadoComIntegracaoPendente(Long id, Exception e){
+        service.alteraStatus(id);
     }
 
 }
